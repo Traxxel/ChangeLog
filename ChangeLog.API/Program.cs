@@ -13,7 +13,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // Standard React-Port
+        policy.WithOrigins("http://localhost:5173") // Vite Dev Server Port
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -61,9 +61,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
-
+// CORS vor den anderen Middleware-Komponenten aktivieren
 app.UseCors();
+
+app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
