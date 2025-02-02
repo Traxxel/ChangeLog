@@ -106,6 +106,16 @@ function ChangelogList() {
     }
   };
 
+  // Funktion zur Formatierung des Datums
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   return (
     <>
       <Box
@@ -116,9 +126,7 @@ function ChangelogList() {
           mb: 2,
         }}
       >
-        <Typography variant="h4" gutterBottom>
-          Changelog
-        </Typography>
+        <Typography variant="h4">Changelog</Typography>
         <Button
           variant="contained"
           color="primary"
@@ -139,16 +147,14 @@ function ChangelogList() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {entries
+            {[...entries]
               .sort(
                 (a, b) =>
                   new Date(b.datum).getTime() - new Date(a.datum).getTime()
               )
               .map((entry) => (
                 <TableRow key={entry.id}>
-                  <TableCell>
-                    {new Date(entry.datum).toLocaleDateString()}
-                  </TableCell>
+                  <TableCell>{formatDate(entry.datum)}</TableCell>
                   <TableCell>{entry.tool?.nameKurz}</TableCell>
                   <TableCell>{entry.version}</TableCell>
                   <TableCell>{entry.beschreibung}</TableCell>
