@@ -16,8 +16,13 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Box,
 } from "@mui/material";
-import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import {
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Add as AddIcon,
+} from "@mui/icons-material";
 import { toolsApi } from "../../services/api";
 import { Tool, CreateToolRequest } from "../../types/api";
 
@@ -67,17 +72,24 @@ function ToolList() {
 
   return (
     <>
-      <Typography variant="h4" gutterBottom>
-        Tools
-      </Typography>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => setOpenDialog(true)}
-        sx={{ mb: 2 }}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
       >
-        Neues Tool
-      </Button>
+        <Typography variant="h4">Tools</Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => setOpenDialog(true)}
+        >
+          Neues Tool
+        </Button>
+      </Box>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
