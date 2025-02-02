@@ -27,16 +27,13 @@ import {
 import { toolsApi } from "../../services/api";
 import { Tool, CreateToolRequest } from "../../types/api";
 import ToolDialog from "./ToolDialog";
+import { DataGrid, Column } from "devextreme-react/data-grid";
 
 function ToolList() {
   const navigate = useNavigate();
   const [tools, setTools] = useState<Tool[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
-  const [newTool, setNewTool] = useState<CreateToolRequest>({
-    nameKurz: "",
-    nameLang: "",
-    beschreibung: "",
-  });
+  const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
 
   const loadTools = async () => {
     try {
@@ -62,15 +59,14 @@ function ToolList() {
     }
   };
 
-  const handleCreate = async () => {
-    try {
-      await toolsApi.create(newTool);
-      setOpenDialog(false);
-      setNewTool({ nameKurz: "", nameLang: "", beschreibung: "" });
-      await loadTools();
-    } catch (error) {
-      console.error("Fehler beim Erstellen des Tools:", error);
-    }
+  const handleEdit = (tool: Tool) => {
+    setSelectedTool(tool);
+    setOpenDialog(true);
+  };
+
+  const handleDialogClose = () => {
+    setOpenDialog(false);
+    setSelectedTool(null);
   };
 
   const handleToolClick = (toolId: string) => {
@@ -103,7 +99,6 @@ function ToolList() {
             <TableRow>
               <TableCell>Kurzname</TableCell>
               <TableCell>Langname</TableCell>
-              <TableCell>Beschreibung</TableCell>
               <TableCell>Aktionen</TableCell>
             </TableRow>
           </TableHead>
@@ -128,8 +123,10 @@ function ToolList() {
                     {tool.nameLang}
                   </Link>
                 </TableCell>
-                <TableCell>{tool.beschreibung}</TableCell>
                 <TableCell>
+                  <IconButton onClick={() => handleEdit(tool)} sx={{ mr: 1 }}>
+                    <EditIcon />
+                  </IconButton>
                   <IconButton onClick={() => handleDelete(tool.id)}>
                     <DeleteIcon />
                   </IconButton>
@@ -142,8 +139,9 @@ function ToolList() {
 
       <ToolDialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
+        onClose={handleDialogClose}
         onSave={loadTools}
+        tool={selectedTool}
       />
     </>
   );

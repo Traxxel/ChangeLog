@@ -1,78 +1,106 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   Button,
+  TextField,
 } from "@mui/material";
+import { Tool, CreateToolRequest } from "../../types/api";
 import { toolsApi } from "../../services/api";
-import { CreateToolRequest } from "../../types/api";
 
 interface ToolDialogProps {
   open: boolean;
   onClose: () => void;
   onSave: () => void;
+  tool?: Tool | null;
 }
 
-function ToolDialog({ open, onClose, onSave }: ToolDialogProps) {
-  const [newTool, setNewTool] = useState<CreateToolRequest>({
+function ToolDialog({ open, onClose, onSave, tool }: ToolDialogProps) {
+  const [formData, setFormData] = useState<CreateToolRequest>({
     nameKurz: "",
     nameLang: "",
-    beschreibung: "",
   });
 
-  const handleCreate = async () => {
-    try {
-      await toolsApi.create(newTool);
-      setNewTool({
+  useEffect(() => {
+    if (tool) {
+      setFormData({
+        nameKurz: tool.nameKurz,
+        nameLang: tool.nameLang,
+      });
+    } else {
+      setFormData({
         nameKurz: "",
         nameLang: "",
-        beschreibung: "",
       });
+    }
+  }, [tool]);
+
+  const handleSubmit = async () => {
+    try {
+      // Validierung
+      if (!formData.nameKurz || !formData.nameLang) {
+        alert("Bitte füllen Sie alle Pflichtfelder aus.");
+        return;
+      }
+
+      const toolData: CreateToolRequest = {
+        nameKurz: formData.nameKurz.trim(),
+        nameLang: formData.nameLang.trim(),
+      };
+
+      if (tool) {
+        await toolsApi.update(tool.id, toolData);
+      } else {
+        await toolsApi.create(toolData);
+      }
       onSave();
       onClose();
-    } catch (error) {
-      console.error("Fehler beim Erstellen des Tools:", error);
+    } catch (error: any) {
+      console.error("Fehler beim Speichern des Tools:", error);
+      let errorMessage = "Fehler beim Speichern des Tools";
+      if (error.response?.data) {
+        if (typeof error.response.data === "string") {
+          errorMessage = error.response.data;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.errors) {
+          errorMessage = Object.values(error.response.data.errors).join("\n");
+        }
+      }
+      alert(errorMessage);
     }
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Neues Tool erstellen</DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>{tool ? "Tool bearbeiten" : "Neues Tool"}</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
           margin="dense"
           label="Kurzname"
           fullWidth
-          value={newTool.nameKurz}
-          onChange={(e) => setNewTool({ ...newTool, nameKurz: e.target.value })}
+          value={formData.nameKurz}
+          onChange={(e) =>
+            setFormData({ ...formData, nameKurz: e.target.value })
+          }
         />
         <TextField
           margin="dense"
           label="Langname"
           fullWidth
-          value={newTool.nameLang}
-          onChange={(e) => setNewTool({ ...newTool, nameLang: e.target.value })}
-        />
-        <TextField
-          margin="dense"
-          label="Beschreibung"
-          fullWidth
-          multiline
-          rows={4}
-          value={newTool.beschreibung}
+          value={formData.nameLang}
           onChange={(e) =>
-            setNewTool({ ...newTool, beschreibung: e.target.value })
+            setFormData({ ...formData, nameLang: e.target.value })
           }
         />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Abbrechen</Button>
-        <Button onClick={handleCreate} variant="contained">
-          Erstellen
+        <Button onClick={handleSubmit} variant="contained" color="primary">
+          {tool ? "Speichern" : "Erstellen"}
         </Button>
       </DialogActions>
     </Dialog>

@@ -3,6 +3,7 @@ import {
   Tool,
   ChangelogEntry,
   CreateToolRequest,
+  UpdateToolRequest,
   CreateChangelogEntryRequest,
 } from "../types/api";
 
@@ -19,7 +20,13 @@ export const toolsApi = {
   getAll: () => api.get<Tool[]>("/tools"),
   getById: (id: string) => api.get<Tool>(`/tools/${id}`),
   create: (tool: CreateToolRequest) => api.post<Tool>("/tools", tool),
-  update: (id: string, tool: Tool) => api.put<void>(`/tools/${id}`, tool),
+  update: (id: string, tool: CreateToolRequest) => {
+    const updateData: UpdateToolRequest = {
+      id,
+      ...tool,
+    };
+    return api.put<Tool>(`/tools/${id}`, updateData);
+  },
   delete: (id: string) => api.delete<void>(`/tools/${id}`),
 };
 
