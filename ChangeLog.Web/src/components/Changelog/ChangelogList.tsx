@@ -8,31 +8,95 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  Box,
 } from "@mui/material";
-import { changelogEntriesApi } from "../../services/api";
-import { ChangelogEntry } from "../../types/api";
+import { Add as AddIcon } from "@mui/icons-material";
+import { changelogEntriesApi, toolsApi } from "../../services/api";
+import {
+  ChangelogEntry,
+  Tool,
+  CreateChangelogEntryRequest,
+} from "../../types/api";
 
 function ChangelogList() {
   const [entries, setEntries] = useState<ChangelogEntry[]>([]);
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [newEntry, setNewEntry] = useState<CreateChangelogEntryRequest>({
+    toolId: "",
+    version: "",
+    beschreibung: "",
+    datum: new Date().toISOString().split("T")[0],
+  });
+
+  const loadEntries = async () => {
+    try {
+      const response = await changelogEntriesApi.getAll();
+      setEntries(response.data);
+    } catch (error) {
+      console.error("Fehler beim Laden der Changelog-Einträge:", error);
+    }
+  };
+
+  const loadTools = async () => {
+    try {
+      const response = await toolsApi.getAll();
+      setTools(response.data);
+    } catch (error) {
+      console.error("Fehler beim Laden der Tools:", error);
+    }
+  };
 
   useEffect(() => {
-    const loadEntries = async () => {
-      try {
-        const response = await changelogEntriesApi.getAll();
-        setEntries(response.data);
-      } catch (error) {
-        console.error("Fehler beim Laden der Changelog-Einträge:", error);
-      }
-    };
-
     loadEntries();
+    loadTools();
   }, []);
+
+  const handleCreate = async () => {
+    try {
+      await changelogEntriesApi.create(newEntry);
+      setOpenDialog(false);
+      setNewEntry({
+        toolId: "",
+        version: "",
+        beschreibung: "",
+        datum: new Date().toISOString().split("T")[0],
+      });
+      await loadEntries();
+    } catch (error) {
+      console.error("Fehler beim Erstellen des Eintrags:", error);
+    }
+  };
 
   return (
     <>
-      <Typography variant="h4" gutterBottom>
-        Changelog
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Typography variant="h4" gutterBottom>
+          Changelog
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => setOpenDialog(true)}
+        >
+          Neuer Eintrag
+        </Button>
+      </Box>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -62,6 +126,65 @@ function ChangelogList() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Neuer Changelog-Eintrag</DialogTitle>
+        <DialogContent>
+          <TextField
+            select
+            margin="dense"
+            label="Tool"
+            fullWidth
+            value={newEntry.toolId}
+            onChange={(e) =>
+              setNewEntry({ ...newEntry, toolId: e.target.value })
+            }
+          >
+            {tools.map((tool) => (
+              <MenuItem key={tool.id} value={tool.id}>
+                {tool.nameKurz} - {tool.nameLang}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            margin="dense"
+            label="Version"
+            fullWidth
+            value={newEntry.version}
+            onChange={(e) =>
+              setNewEntry({ ...newEntry, version: e.target.value })
+            }
+          />
+          <TextField
+            margin="dense"
+            label="Beschreibung"
+            fullWidth
+            multiline
+            rows={4}
+            value={newEntry.beschreibung}
+            onChange={(e) =>
+              setNewEntry({ ...newEntry, beschreibung: e.target.value })
+            }
+          />
+          <TextField
+            margin="dense"
+            label="Datum"
+            type="date"
+            fullWidth
+            value={newEntry.datum}
+            onChange={(e) =>
+              setNewEntry({ ...newEntry, datum: e.target.value })
+            }
+            InputLabelProps={{ shrink: true }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Abbrechen</Button>
+          <Button onClick={handleCreate} variant="contained">
+            Erstellen
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
