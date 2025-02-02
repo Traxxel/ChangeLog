@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ChangeLog.DAL;
+using ChangeLog.API.Models;
 
 namespace ChangeLog.API.Controllers;
 
@@ -76,30 +77,70 @@ public class ChangelogEntriesController : ControllerBase
     /// <summary>
     /// Erstellt einen neuen Changelog-Eintrag
     /// </summary>
-    /// <param name="changelogEntry">Die Daten des neuen Changelog-Eintrags</param>
+    /// <param name="request">Die Daten des neuen Changelog-Eintrags</param>
     /// <returns>Der neu erstellte Changelog-Eintrag</returns>
     /// <response code="201">Gibt den neu erstellten Changelog-Eintrag zurück</response>
     /// <response code="400">Wenn die Daten ungültig sind oder das referenzierte Tool nicht existiert</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<ChangelogEntry>> PostChangelogEntry(ChangelogEntry changelogEntry)
+    public async Task<ActionResult<ChangelogEntry>> PostChangelogEntry(CreateChangelogEntryRequest request)
     {
-        if (!await _context.Tools.AnyAsync(t => t.Id == changelogEntry.ToolId))
+        try
         {
-            return BadRequest("Das angegebene Tool existiert nicht.");
-        }
+            // Validiere die Eingaben
+            if (string.IsNullOrEmpty(request.Version))
+            {
+                return BadRequest("Version ist erforderlich.");
+            }
+            if (string.IsNullOrEmpty(request.Beschreibung))
+            {
+                return BadRequest("Beschreibung ist erforderlich.");
+            }
 
-        changelogEntry.Id = Guid.NewGuid();
-        if (changelogEntry.Datum == default)
+            // Validiere, ob das Tool existiert
+            var toolExists = await _context.Tools.AnyAsync(t => t.Id == request.ToolId);
+            if (!toolExists)
+            {
+                return BadRequest($"Das Tool mit der ID {request.ToolId} existiert nicht.");
+            }
+
+            // Erstelle den Changelog-Eintrag
+            var changelogEntry = new ChangelogEntry
+            {
+                Id = Guid.NewGuid(),
+                ToolId = request.ToolId,
+                Version = request.Version,
+                Beschreibung = request.Beschreibung,
+                Datum = request.Datum ?? DateTime.UtcNow
+            };
+
+            _context.ChangelogEntries.Add(changelogEntry);
+            await _context.SaveChangesAsync();
+
+            // Lade den Eintrag mit Tool-Daten für die Rückgabe
+            var createdEntry = await _context.ChangelogEntries
+                .Include(c => c.Tool)
+                .FirstOrDefaultAsync(c => c.Id == changelogEntry.Id);
+
+            return CreatedAtAction(nameof(GetChangelogEntry), new { id = createdEntry.Id }, createdEntry);
+        }
+        catch (Exception ex)
         {
-            changelogEntry.Datum = DateTime.UtcNow;
+            return BadRequest(new 
+            { 
+                message = ex.Message,
+                details = ex.ToString(),
+                data = new
+                {
+                    toolId = request.ToolId,
+                    toolIdType = request.ToolId.GetType().FullName,
+                    version = request.Version,
+                    beschreibung = request.Beschreibung,
+                    datum = request.Datum
+                }
+            });
         }
-
-        _context.ChangelogEntries.Add(changelogEntry);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetChangelogEntry), new { id = changelogEntry.Id }, changelogEntry);
     }
 
     /// <summary>

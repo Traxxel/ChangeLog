@@ -61,7 +61,34 @@ function ChangelogList() {
 
   const handleCreate = async () => {
     try {
-      await changelogEntriesApi.create(newEntry);
+      // Validiere die Eingaben
+      if (!newEntry.toolId) {
+        console.error("Kein Tool ausgewählt");
+        return;
+      }
+      if (!newEntry.version) {
+        console.error("Keine Version angegeben");
+        return;
+      }
+      if (!newEntry.beschreibung) {
+        console.error("Keine Beschreibung angegeben");
+        return;
+      }
+
+      // Formatiere das Datum korrekt für die API
+      const entryToSend = {
+        toolId: newEntry.toolId,
+        version: newEntry.version,
+        beschreibung: newEntry.beschreibung,
+        datum: newEntry.datum
+          ? new Date(newEntry.datum).toISOString()
+          : new Date().toISOString(),
+      };
+
+      console.log("Sende Changelog-Eintrag:", entryToSend);
+      const response = await changelogEntriesApi.create(entryToSend);
+      console.log("API-Antwort:", response);
+
       setOpenDialog(false);
       setNewEntry({
         toolId: "",
@@ -70,8 +97,12 @@ function ChangelogList() {
         datum: new Date().toISOString().split("T")[0],
       });
       await loadEntries();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Fehler beim Erstellen des Eintrags:", error);
+      if (error.response) {
+        console.error("Fehler-Status:", error.response.status);
+        console.error("Fehler-Details:", error.response.data);
+      }
     }
   };
 
