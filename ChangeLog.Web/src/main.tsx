@@ -1,10 +1,17 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.tsx";
+import { licenseKey } from "./devextreme-license";
+import config from "devextreme/core/config";
+import "devextreme/dist/css/dx.light.css";
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+// DevExpress Lizenzschlüssel setzen
+config({
+  licenseKey: licenseKey,
+});
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
     <App />
-  </StrictMode>,
-)
+  </React.StrictMode>
+);
