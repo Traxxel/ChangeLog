@@ -17,6 +17,7 @@ import {
   DialogActions,
   TextField,
   Box,
+  Link,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -25,6 +26,7 @@ import {
 } from "@mui/icons-material";
 import { toolsApi } from "../../services/api";
 import { Tool, CreateToolRequest } from "../../types/api";
+import ToolDialog from "./ToolDialog";
 
 function ToolList() {
   const navigate = useNavigate();
@@ -33,6 +35,7 @@ function ToolList() {
   const [newTool, setNewTool] = useState<CreateToolRequest>({
     nameKurz: "",
     nameLang: "",
+    beschreibung: "",
   });
 
   const loadTools = async () => {
@@ -63,11 +66,15 @@ function ToolList() {
     try {
       await toolsApi.create(newTool);
       setOpenDialog(false);
-      setNewTool({ nameKurz: "", nameLang: "" });
+      setNewTool({ nameKurz: "", nameLang: "", beschreibung: "" });
       await loadTools();
     } catch (error) {
       console.error("Fehler beim Erstellen des Tools:", error);
     }
+  };
+
+  const handleToolClick = (toolId: string) => {
+    navigate(`/changelog?toolId=${toolId}`);
   };
 
   return (
@@ -96,18 +103,33 @@ function ToolList() {
             <TableRow>
               <TableCell>Kurzname</TableCell>
               <TableCell>Langname</TableCell>
+              <TableCell>Beschreibung</TableCell>
               <TableCell>Aktionen</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {tools.map((tool) => (
               <TableRow key={tool.id}>
-                <TableCell>{tool.nameKurz}</TableCell>
-                <TableCell>{tool.nameLang}</TableCell>
                 <TableCell>
-                  <IconButton onClick={() => navigate(`/tools/${tool.id}`)}>
-                    <EditIcon />
-                  </IconButton>
+                  <Link
+                    component="button"
+                    onClick={() => handleToolClick(tool.id)}
+                    sx={{ textDecoration: "none" }}
+                  >
+                    {tool.nameKurz}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Link
+                    component="button"
+                    onClick={() => handleToolClick(tool.id)}
+                    sx={{ textDecoration: "none" }}
+                  >
+                    {tool.nameLang}
+                  </Link>
+                </TableCell>
+                <TableCell>{tool.beschreibung}</TableCell>
+                <TableCell>
                   <IconButton onClick={() => handleDelete(tool.id)}>
                     <DeleteIcon />
                   </IconButton>
@@ -118,36 +140,11 @@ function ToolList() {
         </Table>
       </TableContainer>
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>Neues Tool erstellen</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Kurzname"
-            fullWidth
-            value={newTool.nameKurz}
-            onChange={(e) =>
-              setNewTool({ ...newTool, nameKurz: e.target.value })
-            }
-          />
-          <TextField
-            margin="dense"
-            label="Langname"
-            fullWidth
-            value={newTool.nameLang}
-            onChange={(e) =>
-              setNewTool({ ...newTool, nameLang: e.target.value })
-            }
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Abbrechen</Button>
-          <Button onClick={handleCreate} variant="contained">
-            Erstellen
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ToolDialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        onSave={loadTools}
+      />
     </>
   );
 }

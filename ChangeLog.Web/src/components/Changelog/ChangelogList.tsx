@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Paper,
   Table,
@@ -26,11 +27,14 @@ import {
 } from "../../types/api";
 
 function ChangelogList() {
+  const [searchParams] = useSearchParams();
+  const toolId = searchParams.get("toolId");
   const [entries, setEntries] = useState<ChangelogEntry[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
+  const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [newEntry, setNewEntry] = useState<CreateChangelogEntryRequest>({
-    toolId: "",
+    toolId: toolId || "",
     version: "",
     beschreibung: "",
     datum: new Date().toISOString().split("T")[0],
@@ -39,7 +43,13 @@ function ChangelogList() {
   const loadEntries = async () => {
     try {
       const response = await changelogEntriesApi.getAll();
-      setEntries(response.data);
+      let filteredEntries = response.data;
+      if (toolId) {
+        filteredEntries = filteredEntries.filter(
+          (entry) => entry.tool?.id === toolId
+        );
+      }
+      setEntries(filteredEntries);
     } catch (error) {
       console.error("Fehler beim Laden der Changelog-Einträge:", error);
     }
@@ -49,6 +59,13 @@ function ChangelogList() {
     try {
       const response = await toolsApi.getAll();
       setTools(response.data);
+      if (toolId) {
+        const tool = response.data.find((t) => t.id === toolId);
+        setSelectedTool(tool || null);
+        if (tool) {
+          setNewEntry((prev) => ({ ...prev, toolId: tool.id }));
+        }
+      }
     } catch (error) {
       console.error("Fehler beim Laden der Tools:", error);
     }
@@ -57,7 +74,7 @@ function ChangelogList() {
   useEffect(() => {
     loadEntries();
     loadTools();
-  }, []);
+  }, [toolId]);
 
   const handleCreate = async () => {
     try {
@@ -126,7 +143,16 @@ function ChangelogList() {
           mb: 2,
         }}
       >
-        <Typography variant="h4">Changelog</Typography>
+        <Box>
+          <Typography variant="h4">
+            Changelog
+            {selectedTool && (
+              <Typography variant="h5" sx={{ mt: 1, color: "text.secondary" }}>
+                für {selectedTool.nameKurz} - {selectedTool.nameLang}
+              </Typography>
+            )}
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           color="primary"
@@ -176,6 +202,7 @@ function ChangelogList() {
             onChange={(e) =>
               setNewEntry({ ...newEntry, toolId: e.target.value })
             }
+            disabled={!!toolId}
           >
             {tools.map((tool) => (
               <MenuItem key={tool.id} value={tool.id}>

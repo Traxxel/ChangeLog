@@ -2,6 +2,7 @@ export interface Tool {
   id: string;
   nameKurz: string;
   nameLang: string;
+  beschreibung: string;
   changelogEntries?: ChangelogEntry[];
 }
 
@@ -17,6 +18,7 @@ export interface ChangelogEntry {
 export interface CreateToolRequest {
   nameKurz: string;
   nameLang: string;
+  beschreibung: string;
 }
 
 export interface CreateChangelogEntryRequest {
